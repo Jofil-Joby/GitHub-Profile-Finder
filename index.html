@@ -1,54 +1,218 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GitHub Profile Finder</title>
-  <link rel="icon" href="favicon.ico" type="image/x-icon">
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
+
+  <!-- theme toggle -->
+  <button id="themeToggle" title="Toggle theme">🌙</button>
 
   <h1>GitHub Profile Finder</h1>
   <p>Type a GitHub username and click the button to see their profile.</p>
 
+  <!-- api rate limit badge -->
+  <div id="rateLimit">API: checking...</div>
+
   <br>
 
-  <input type="text" id="uname" placeholder="Enter username here...">
-  <button onclick="fetchProfile()">Search</button>
+  <!-- search box with suggestions dropdown -->
+  <div id="searchBox">
+    <div id="searchInner">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="2">
+        <circle cx="11" cy="11" r="8" />
+        <path d="m21 21-4.35-4.35" />
+      </svg>
+      <input type="text" id="uname" placeholder="Enter username here..." autocomplete="off" spellcheck="false">
+      <button id="clearBtn" title="Clear">✕</button>
+      <button id="searchBtn" onclick="fetchProfile()">Search</button>
+    </div>
+    <!-- suggestions dropdown -->
+    <div id="suggestions"></div>
+  </div>
 
-  <br><br>
+  <!-- search history chips -->
+  <div id="historyRow"></div>
 
-  <p id="loadMsg">Loading...</p>
-  <p id="errMsg">User not found. Please try again.</p>
+  <!-- loading and error messages -->
+  <div id="loadMsg">
+    <div class="spinner"></div>
+    <span>Loading...</span>
+  </div>
+  <div id="errMsg">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="12" />
+      <line x1="12" y1="16" x2="12.01" y2="16" />
+    </svg>
+    <span id="errText">User not found. Please try again.</span>
+  </div>
 
-  <div id="card">
+  <!-- compare mode banner -->
+  <div id="compareBar">
+    <span>Compare mode ON — search another user to compare</span>
+    <button onclick="clearCompare()">✕ Clear</button>
+  </div>
 
-    <img id="avatar" src="" alt="profile picture">
+  <!-- main content: profile card + repos/followers tabs -->
+  <div id="mainContent">
 
-    <h2 id="fullname"></h2>
-    <p id="loginname"></p>
-    <p id="bio"></p>
+    <!-- left: profile card -->
+    <div id="profileSection">
 
-    <hr>
+      <div id="card">
 
-    <p>Public Repos: <span id="repos"></span></p>
-    <p>Followers: <span id="followers"></span></p>
-    <p>Following: <span id="following"></span></p>
+        <!-- action buttons -->
+        <div id="cardActions">
+          <button class="action-btn" id="favBtn" onclick="toggleFav()">☆ Favourite</button>
+          <button class="action-btn" onclick="copyUsername()">⎘ Copy</button>
+          <button class="action-btn" onclick="shareProfile()">⤴ Share</button>
+          <button class="action-btn" onclick="setCompare()">⇄ Compare</button>
+        </div>
 
-    <hr>
+        <!-- avatar + name + bio -->
+        <div id="cardTop">
+          <div id="avatarWrap">
+            <img id="avatar" src="" alt="profile picture">
+            <div id="avatarGlow"></div>
+          </div>
+          <div id="cardInfo">
+            <h2 id="fullname"></h2>
+            <p id="loginname"></p>
+            <p id="bio"></p>
+            <div id="metaRow">
+              <span id="locItem" class="meta-chip" style="display:none">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                  <circle cx="12" cy="10" r="3" />
+                </svg>
+                <span id="location"></span>
+              </span>
+              <a id="blogItem" class="meta-chip" href="#" target="_blank" style="display:none">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
+                <span id="blog"></span>
+              </a>
+              <span id="twitterItem" class="meta-chip" style="display:none">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                  <path
+                    d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.258 5.622 5.906-5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                </svg>
+                <span id="twitter"></span>
+              </span>
+              <span id="companyItem" class="meta-chip" style="display:none">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                </svg>
+                <span id="company"></span>
+              </span>
+              <span id="joinItem" class="meta-chip">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <line x1="16" y1="2" x2="16" y2="6" />
+                  <line x1="8" y1="2" x2="8" y2="6" />
+                  <line x1="3" y1="10" x2="21" y2="10" />
+                </svg>
+                <span id="joined"></span>
+              </span>
+            </div>
+          </div>
+        </div>
 
-    <p id="locItem">Location: <span id="location"></span></p>
-    <p id="blogItem">Website: <span id="blog"></span></p>
-    <p id="joinItem">Joined: <span id="joined"></span></p>
+        <hr>
 
-    <br>
+        <!-- stats -->
+        <div id="statsRow">
+          <div class="stat-box">
+            <div class="stat-num" id="repos">—</div>
+            <div class="stat-lbl">Repos</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" id="followers">—</div>
+            <div class="stat-lbl">Followers</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" id="following">—</div>
+            <div class="stat-lbl">Following</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-num" id="gists">—</div>
+            <div class="stat-lbl">Gists</div>
+          </div>
+        </div>
 
-    <a id="profileLink" href="#" target="_blank">View on GitHub</a>
+        <hr>
+
+        <a id="profileLink" href="#" target="_blank">View on GitHub →</a>
+
+      </div>
+
+      <!-- compare card (shown when compare mode is active) -->
+      <div id="compareCard" style="display:none">
+        <div id="compareContent"></div>
+      </div>
+
+    </div>
+
+    <!-- right: tabs for repos / followers / following -->
+    <div id="detailSection">
+
+      <div id="tabs">
+        <button class="tab active" onclick="showTab('repos')">📦 Repositories</button>
+        <button class="tab" onclick="showTab('followers')">👥 Followers</button>
+        <button class="tab" onclick="showTab('following')">➕ Following</button>
+      </div>
+
+      <!-- sort bar (only shown on repos tab) -->
+      <div id="sortBar">
+        <span>Sort by:</span>
+        <button class="sort-btn active" onclick="sortRepos('stars', event)">⭐ Stars</button>
+        <button class="sort-btn" onclick="sortRepos('updated', event)">🕐 Updated</button>
+        <button class="sort-btn" onclick="sortRepos('name', event)">🔤 Name</button>
+        <button class="sort-btn" onclick="sortRepos('forks', event)">🍴 Forks</button>
+      </div>
+
+      <div id="repoTab" class="tab-content active">
+        <div id="repoList"></div>
+        <button id="loadMoreBtn" onclick="loadMoreRepos()" style="display:none">Load more repos</button>
+      </div>
+
+      <div id="followersTab" class="tab-content">
+        <div id="followersList"></div>
+      </div>
+
+      <div id="followingTab" class="tab-content">
+        <div id="followingList"></div>
+      </div>
+
+    </div>
 
   </div>
 
-  <script src="script.js"></script>
+  <!-- favourites side panel -->
+  <div id="favPanel">
+    <div id="favHeader">
+      <span>⭐ Favourites</span>
+      <button onclick="toggleFavPanel()">✕</button>
+    </div>
+    <div id="favList"></div>
+  </div>
 
+  <!-- favourites toggle button -->
+  <button id="favToggleBtn" onclick="toggleFavPanel()">⭐ <span id="favCount">0</span></button>
+
+  <!-- toast notification -->
+  <div id="toast"></div>
+
+  <script src="script.js"></script>
 </body>
+
 </html>
